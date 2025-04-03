@@ -16,5 +16,5 @@ if __name__ == "__main__":
             limit=5
         )
     except KeyboardInterrupt as err:
-        print("Gracefully exiting app...")
+        print("\nGracefully exiting app...")
         sys.exit()

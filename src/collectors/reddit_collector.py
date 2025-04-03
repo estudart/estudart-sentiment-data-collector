@@ -73,10 +73,12 @@ class RedditDataCollector(DataCollector):
     
 
     def process_data(self, data: dict):
-        return super().process_data(data)
+
+        return json.dumps(data)
     
 
     def send_to_queue(self, data: json):
+        
         return super().send_to_queue(data)
     
 
