@@ -8,8 +8,8 @@ from src.collectors.base_collector import DataCollector
 
 
 class RedditDataCollector(DataCollector):
-    def __init__(self, queue_manager):
-        super().__init__(queue_manager)
+    def __init__(self):
+        super().__init__()
 
         self.reddit = None
 
@@ -29,61 +29,65 @@ class RedditDataCollector(DataCollector):
 
         sub_reddit_obj = self.reddit.subreddit(keyword)
 
-        for post in sub_reddit_obj.hot(limit=limit):
-            new_post = {
-                # Textual Content
-                "title": post.title,
-                "selftext": post.selftext,
-                "selftext_html": post.selftext_html,
+        hot_posts = sub_reddit_obj.hot(limit=limit)
 
-                # Metadata
-                "author": post.author_fullname,
-                "subreddit": post.subreddit,
-                "subreddit_prefixed": post.subreddit_name_prefixed,
-                "domain": post.domain,
-                "created_utc": post.created_utc,
-                "edited": post.edited,
-
-                # Engagement Metrics
-                "score": post.score,
-                "ups": post.ups,
-                "downs": post.downs,
-                "upvote_ratio": post.upvote_ratio,
-                "total_awards_received": post.total_awards_received,
-                "num_comments": post.num_comments,
-
-                # Flair & Tags
-                "link_flair_text": post.link_flair_text,
-                "link_flair_richtext": post.link_flair_richtext,
-                "author_flair_css_class": post.author_flair_css_class,
-
-                # Governance & Voting Data (if applicable)
-                "poll_data": post.poll_data if hasattr(post, "poll_data") else None,
-                "governance_links": post.selftext if "governance" in post.selftext.lower() else None,
-
-                # URL
-                "url": post.url
-            }
-
-            posts.append(new_post)
-
-            self.logger.info(f"Fetched post: {new_post}")
-
-        return posts
+        return hot_posts
     
 
-    def process_data(self, data: dict):
+    def process_data(self, post: dict) -> list:
+        
+        new_post = {
+            # Textual Content
+            "title": post.title,
+            "selftext": post.selftext,
+            "selftext_html": post.selftext_html,
 
-        return json.dumps(data)
+            # Metadata
+            "author": post.author_fullname,
+            "subreddit": post.subreddit,
+            "subreddit_prefixed": post.subreddit_name_prefixed,
+            "domain": post.domain,
+            "created_utc": post.created_utc,
+            "edited": post.edited,
+
+            # Engagement Metrics
+            "score": post.score,
+            "ups": post.ups,
+            "downs": post.downs,
+            "upvote_ratio": post.upvote_ratio,
+            "total_awards_received": post.total_awards_received,
+            "num_comments": post.num_comments,
+
+            # Flair & Tags
+            "link_flair_text": post.link_flair_text,
+            "link_flair_richtext": post.link_flair_richtext,
+            "author_flair_css_class": post.author_flair_css_class,
+
+            # Governance & Voting Data (if applicable)
+            "poll_data": post.poll_data if hasattr(post, "poll_data") else None,
+            "governance_links": post.selftext if "governance" in post.selftext.lower() else None,
+
+            # URL
+            "url": post.url
+        }
+
+        return json.dumps(str(new_post))
     
 
     def send_to_queue(self, data: json):
         
-        return super().send_to_queue(data)
+        return self.queue_manager.send_to_queue(
+            "reddit-hot-",
+            data
+        )
     
 
     def run(self, keyword: str, limit: int = 10):
         while True:
-            self.fetch_data(keyword, limit=limit)
+            posts = self.fetch_data(keyword, limit=limit)
+            for post in posts:
+                processed_post = self.process_data(post)
+                self.send_to_queue(processed_post)
+
             time.sleep(5)
     

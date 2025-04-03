@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import json
 
 from src.queue.queue_manager import QueueManager
+from src.queue.redis_queue_manager import RedisQueueManager
 from src.utils.config import secrets
 from src.adapters.logger_adapter import LoggerAdapter
 
@@ -9,7 +10,7 @@ from src.adapters.logger_adapter import LoggerAdapter
 
 class DataCollector(ABC):
     def __init__(self,
-                 queue_manager: QueueManager,
+                 queue_manager: QueueManager = RedisQueueManager(),
                  secrets: dict = secrets):
         
         self.queue_manager = queue_manager
