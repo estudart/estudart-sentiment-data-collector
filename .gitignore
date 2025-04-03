@@ -1,2 +1,5 @@
 # Ignore config.py
 src/utils/config.py
+
+# Ignore venv
+venv/
