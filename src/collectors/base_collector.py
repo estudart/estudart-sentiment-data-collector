@@ -3,6 +3,7 @@ import json
 
 from src.queue.queue_manager import QueueManager
 from src.utils.config import secrets
+from src.adapters.logger_adapter import LoggerAdapter
 
 
 
@@ -12,6 +13,7 @@ class DataCollector(ABC):
                  secrets: dict = secrets):
         
         self.queue_manager = queue_manager
+        self.logger = LoggerAdapter().get_logger()
         self.secrets = secrets
 
     @abstractmethod

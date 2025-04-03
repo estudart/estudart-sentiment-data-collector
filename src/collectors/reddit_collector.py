@@ -30,7 +30,7 @@ class RedditDataCollector(DataCollector):
         sub_reddit_obj = self.reddit.subreddit(keyword)
 
         for post in sub_reddit_obj.hot(limit=limit):
-            posts.append({
+            new_post = {
                 # Textual Content
                 "title": post.title,
                 "selftext": post.selftext,
@@ -63,7 +63,11 @@ class RedditDataCollector(DataCollector):
 
                 # URL
                 "url": post.url
-            })
+            }
+
+            posts.append(new_post)
+
+            self.logger.info(f"Fetched post: {new_post}")
 
         return posts
     
@@ -78,6 +82,6 @@ class RedditDataCollector(DataCollector):
 
     def run(self, keyword: str, limit: int = 10):
         while True:
-            self.fetch_data(keyword, limit=1)
+            self.fetch_data(keyword, limit=limit)
             time.sleep(5)
     
