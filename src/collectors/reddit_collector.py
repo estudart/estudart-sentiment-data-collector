@@ -111,4 +111,4 @@ class RedditDataCollector(DataCollector):
             posts = self.fetch_data(keyword, limit=limit)
             for post in posts:
                 self.process_data(post, keyword)
-            time.sleep(10)
+            time.sleep(60)
