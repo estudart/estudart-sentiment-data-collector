@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from src.adapters.logger_adapter import LoggerAdapter
+from src.utils.extensions import logger
 from src.utils.config import secrets
 
 
@@ -10,7 +10,7 @@ class QueueManager(ABC):
         
         self.secrets = secrets
         
-        self.logger = LoggerAdapter().get_logger()
+        self.logger = logger
 
         self.queue_connection = None
 
