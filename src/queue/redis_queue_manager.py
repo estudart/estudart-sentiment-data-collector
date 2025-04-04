@@ -23,8 +23,7 @@ class RedisQueueManager(QueueManager):
             # Connect to Redis
             self.queue_connection = redis.Redis(
                     host=self.host,
-                    port=self.port
-                    )
+                    port=self.port)
             
             # Check connection
             self.queue_connection.ping()
