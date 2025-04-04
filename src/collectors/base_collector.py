@@ -4,7 +4,7 @@ import json
 from src.queue.queue_manager import QueueManager
 from src.queue.redis_queue_manager import RedisQueueManager
 from src.utils.config import secrets
-from src.adapters.logger_adapter import LoggerAdapter
+from src.utils.extensions import logger
 
 
 
@@ -14,7 +14,7 @@ class DataCollector(ABC):
                  secrets: dict = secrets):
         
         self.queue_manager = queue_manager
-        self.logger = LoggerAdapter().get_logger()
+        self.logger = logger
         self.secrets = secrets
 
     @abstractmethod
