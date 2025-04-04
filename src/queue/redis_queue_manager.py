@@ -40,6 +40,14 @@ class RedisQueueManager(QueueManager):
         self.logger.info(f"Message was sent to queue: {data}")
 
     
+    def is_set_member(self, set_name, id):
+        if self.queue_connection.sismember(set_name, id):
+            return True
+        else:
+            self.queue_connection.sadd(set_name, id)
+            return False
+
+    
     def consume_queue(self, queue_name: str):
         data = self.queue_connection.rpop(queue_name)
         if data:
