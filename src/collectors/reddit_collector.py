@@ -1,15 +1,22 @@
 import time
 import json
+from datetime import datetime, timezone
 
 import praw
 
 from src.collectors.base_collector import DataCollector
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 
 class RedditDataCollector(DataCollector):
     def __init__(self):
         super().__init__()
+
+        self.loop_delay_time = self.secrets.get("REDDIT_LOOP_DELAY_TIME")
+        self.post_limit = self.secrets.get("REDDIT_POST_LIMIT")
+        self.comment_limit = self.secrets.get("REDDIT_COMMENT_LIMIT")
+        self.executor = ThreadPoolExecutor(max_workers=self.comment_limit)
 
         self.reddit = None
 
@@ -24,19 +31,35 @@ class RedditDataCollector(DataCollector):
         )
 
 
-    def fetch_data(self, keyword: str, limit: int = 10) -> list:
+    def fetch_data(self, keyword: str, limit: int) -> list:
         sub_reddit_obj = self.reddit.subreddit(keyword)
         hot_posts = sub_reddit_obj.hot(limit=limit)
-        return hot_posts
+        new_posts = sub_reddit_obj.new(limit=limit)
+        return list(hot_posts) + list(new_posts)
+    
+
+    def process_comment(self, comment, keyword, post_id):
+        processed_comments = {
+            "comment_id": comment.id,
+            "post_id": post_id,
+            "author": str(comment.author),
+            "body": comment.body,
+            "score": comment.score,
+            "created_utc": comment.created_utc,
+            "parent_id": comment.parent_id,
+            "depth": comment.depth  # Helps in structuring nested comments
+        }
+        if not self.queue_manager.is_set_member("reddit-comments", comment.id):
+            self.send_to_queue(f"reddit-{keyword}-comments", 
+                                processed_comments)
     
 
     def process_data(self, post: dict, keyword: str) -> list:
-        is_post_processed = False
-        is_comments_processed = False
+        is_post_new = False
 
         try:
             # Process post and send to queue
-            processed_post = json.dumps({
+            processed_post = {
                 # Textual Content
                 "title": post.title,
                 "selftext": post.selftext,
@@ -66,10 +89,14 @@ class RedditDataCollector(DataCollector):
 
                 # URL
                 "url": post.url
-            })
-            self.send_to_queue(f"reddit-{keyword}-posts", 
-                                processed_post)
-            is_post_processed = True
+            }
+            if not self.queue_manager.is_set_member("reddit-posts", post.id):
+                self.send_to_queue(f"reddit-{keyword}-posts", 
+                                    processed_post)
+                is_post_new = True
+            else:
+                self.logger.debug(f"Post {post.id} already seen, skipping.")
+                return is_post_new
         except Exception as err:
             self.logger.error(
                 f"Could not process post with id {post.id}, "
@@ -77,38 +104,47 @@ class RedditDataCollector(DataCollector):
 
         try:
             # Get all comments for the post
-            post.comments.replace_more(limit=10)
+            post.comments.replace_more(limit=self.comment_limit)
             comments = post.comments.list()
             # Run a loop on comments list and send it to queue
-            for comment in comments:
-                processed_comments = json.dumps({
-                    "comment_id": comment.id,
-                    "post_id": post.id,
-                    "author": str(comment.author),
-                    "body": comment.body,
-                    "score": comment.score,
-                    "created_utc": comment.created_utc,
-                    "parent_id": comment.parent_id,
-                    "depth": comment.depth  # Helps in structuring nested comments
-                })
-                self.send_to_queue(f"reddit-{keyword}-comments", 
-                                    processed_comments)
-            is_comments_processed = True
+            futures = [
+                self.executor.submit(self.process_comment, 
+                                     comment, keyword, post.id)
+                for comment in comments
+            ]
+            for future in as_completed(futures):
+                future.result()
+
         except Exception as err:
             self.logger.error(
                 f"Could not process comments for post with id {post.id}, "
                 f"reason: {err}")
 
-        return (is_post_processed, is_comments_processed)
+        return is_post_new
     
 
     def send_to_queue(self, queue, data: json):
         return self.queue_manager.send_to_queue(queue, data)
     
 
-    def run(self, keyword: str, limit: int = 10):
+    def run(self, keyword):
         while True:
-            posts = self.fetch_data(keyword, limit=limit)
+            loop_start_time = datetime.now(timezone.utc)
+            posts = self.fetch_data(keyword, limit=self.post_limit)
+            number_of_posts = 0
             for post in posts:
-                self.process_data(post, keyword)
-            time.sleep(60)
+                if self.process_data(post, keyword):
+                    number_of_posts+=1
+            loop_finished_time = datetime.now(timezone.utc)
+
+            time_difference = (
+                (loop_finished_time - loop_start_time)
+                .total_seconds()
+            )
+
+            self.logger.info(
+                f"Loop for {keyword} took {round(time_difference, 2)} seconds "
+                f"and processed {number_of_posts} posts."
+            )
+
+            time.sleep(self.loop_delay_time)
