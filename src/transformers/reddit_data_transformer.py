@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timezone
+import json
 
 from src.transformers.data_transformer import DataTransformer
 
@@ -14,31 +15,28 @@ class RedditDataTransformer(DataTransformer):
     def transform_data(self, data, data_type):
         if data_type == "posts":
             return {
-                "post_id": data.get("post_id"),
-                "platform": self.platform,
+                "id": data.get("post_id"),
                 "title": data.get("title"),
                 "body": data.get("selftext"),
-                "body_html": data.get("selftext_html"),
+                "selftext_html": data.get("selftext_html"),
                 "author": data.get("author"),
-                "community": data.get("subreddit"),
-                "community_prefixed": data.get("subreddit_prefixed"),
-                "source_domain": data.get("domain"),
-                "created_at": datetime.fromtimestamp(data.get("created_utc")),
-                "edited": data.get("edited"),  # JSON-safe (bool or timestamp)
+                "subreddit": data.get("subreddit"),
+                "subreddit_prefixed": data.get("subreddit_prefixed"),
+                "url": data.get("url"),
+                "created_utc": datetime.fromtimestamp(data.get("created_utc")),
                 "score": data.get("score"),
                 "upvotes": data.get("ups"),
                 "downvotes": data.get("downs"),
-                "upvote_ratio": data.get("upvote_ratio"),
-                "awards": data.get("total_awards_received"),
-                "comment_count": data.get("num_comments"),
-                "flair_text": data.get("link_flair_text"),
-                "flair_richtext": data.get("link_flair_richtext"),
-                "author_flair_class": data.get("author_flair_css_class"),
-                "external_url": data.get("url"),
+                "num_comments": data.get("num_comments"),
+                "link_flair_text": data.get("link_flair_text"),
+                "link_flair_richtext": json.dumps(data.get("link_flair_richtext")),
+                "author_flair_css_class": data.get("author_flair_css_class"),
+                # Optional metadata
+                "fetched_at": datetime.now(timezone.utc)
             }
         elif data_type == "comments":
             return {
-                "comment_id": data.get("comment_id"),
+                "id": data.get("comment_id"),
                 "post_id": data.get("post_id"),
                 "author": data.get("author"),
                 "body": data.get("body"),
