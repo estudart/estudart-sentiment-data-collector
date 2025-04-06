@@ -130,7 +130,14 @@ class RedditDataCollector(DataCollector):
     def run(self, keyword):
         while True:
             loop_start_time = datetime.now(timezone.utc)
-            posts = self.fetch_data(keyword, limit=self.post_limit)
+            try:
+                posts = self.fetch_data(keyword, limit=self.post_limit)
+            except Exception as err:
+                self.logger.info(
+                    f"Could not fetch data for {keyword}, "
+                    f"reason: {err}"
+                )
+                break
             number_of_posts = 0
             for post in posts:
                 if self.process_data(post, keyword):
