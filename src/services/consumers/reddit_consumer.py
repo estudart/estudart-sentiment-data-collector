@@ -62,3 +62,9 @@ if __name__ == "__main__":
             comments_consumer_process = Process(target=consume_queue,
                                             args=(keyword, "comments",)
                                             ).start()
+            posts_consumer_process = Process(target=consume_queue,
+                                            args=(keyword, "comments",)
+                                            ).start()
+            comments_consumer_process = Process(target=consume_queue,
+                                            args=(keyword, "comments",)
+                                            ).start()
