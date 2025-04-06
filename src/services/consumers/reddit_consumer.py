@@ -16,8 +16,8 @@ from src.utils.config import secrets
 def consume_queue(keyword, data_type):
     consumer_instance = RedisQueueManager()
     transformer_instance = RedditDataTransformer()
+    queue_name = f"reddit-{keyword}-{data_type}"
     while True:
-        queue_name = f"reddit-{keyword}-{data_type}"
         try:
             message = consumer_instance.consume_queue(queue_name)
             if message:
@@ -54,10 +54,11 @@ def consume_queue(keyword, data_type):
 
 
 if __name__ == "__main__":
-    for keyword in secrets.get("KEYWORDS"):
-        posts_consumer_process = Process(target=consume_queue,
-                                        args=(keyword, "posts",)
-                                        ).start()
-        comments_consumer_process = Process(target=consume_queue,
-                                        args=(keyword, "comments",)
-                                        ).start()
+    for asset, asset_keyword_list in secrets.get("REDDIT_KEYWORDS").items():
+        for keyword in asset_keyword_list:
+            posts_consumer_process = Process(target=consume_queue,
+                                            args=(keyword, "posts",)
+                                            ).start()
+            comments_consumer_process = Process(target=consume_queue,
+                                            args=(keyword, "comments",)
+                                            ).start()
