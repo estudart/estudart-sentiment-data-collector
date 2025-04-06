@@ -11,10 +11,11 @@ def start_scrapper(keyword):
 
 if __name__ == "__main__":
     try:
-        for keyword in secrets.get("KEYWORDS"):
-            Process(target=start_scrapper, 
-                    args=(keyword, )
-                    ).start()
+        for asset, asset_keyword_list in secrets.get("REDDIT_KEYWORDS").items():
+            for keyword in asset_keyword_list:
+                Process(target=start_scrapper, 
+                        args=(keyword, )
+                        ).start()
     except KeyboardInterrupt as err:
         print("\nGracefully exiting app...")
         sys.exit()
