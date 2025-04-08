@@ -31,19 +31,37 @@ class YoutubeDataCollector(DataCollector):
         self.youtube = build("youtube", "v3", developerKey=self.api_key)
 
 
-    def fetch_data(self, query: str, limit: int = 5) -> list:
+    def fetch_data(self, query: str, limit: int = 5, by="channel") -> list:
 
-        videos_data = self.youtube.search().list(
-            q=query,
-            part="id,snippet",
-            type="video",
-            regionCode="BR",
-            relevanceLanguage="pt",
-            maxResults=limit,
-            fields=(
-                "items(id(videoId),snippet(publishedAt,channelId,channelTitle,title,description))"
-            )
-        ).execute()
+        if by == "channel":
+            videos_data = self.youtube.search().list(
+                q=query,
+                part="id,snippet",
+                type="video",
+                regionCode="BR",
+                relevanceLanguage="pt",
+                maxResults=limit,
+                fields=(
+                    "items(id(videoId),snippet(publishedAt,channelId,channelTitle,title,description))"
+                )
+            ).execute()
+
+        else:
+            channel_response = self.youtube.channels().list(
+                part='contentDetails',
+                id=query
+            ).execute()
+
+            uploads_playlist_id = channel_response['items'][0]['contentDetails']['relatedPlaylists']['uploads']
+
+            videos_data = self.youtube.playlistItems().list(
+                part="snippet",
+                playlistId=uploads_playlist_id,
+                maxResults=limit,
+                fields=(
+                    "items(snippet(publishedAt,channelId,channelTitle,title,description,resourceId(videoId)))"
+                )
+            ).execute()
 
         return videos_data
     
@@ -79,11 +97,17 @@ class YoutubeDataCollector(DataCollector):
                                 processed_comment)
     
 
-    def process_data(self, video_data: dict, keyword: str) -> list:
+    def process_data(self, 
+                     video_data: dict, 
+                     keyword: str, 
+                     by: str = "channel") -> list:
         is_post_new = False
 
         try:
-            video_id = video_data["id"]["videoId"]
+            if by == "channel":
+                video_id = video_data["snippet"]["resourceId"]["videoId"]
+            else:
+                video_id = video_data["id"]["videoId"]
             video_stats = self.youtube.videos().list(
                     part="statistics",
                     id=video_id,
@@ -97,7 +121,7 @@ class YoutubeDataCollector(DataCollector):
                 "body": self.fetch_video_transcript(video_id),
 
                 # Metadata
-                "id": video_data["id"]["videoId"],
+                "id": video_id,
                 "created_utc": video_data["snippet"]["publishedAt"],
                 "channel_id": video_data["snippet"]["channelId"],
                 "channel_title": video_data["snippet"]["channelTitle"],
