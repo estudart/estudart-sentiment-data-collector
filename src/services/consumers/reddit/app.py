@@ -29,16 +29,16 @@ def consume_queue(keyword, data_type):
                     new_element = RedditPost(**normalized_message)
                 elif data_type == "comments":
                     new_element = RedditComment(**normalized_message)
-                    try:
-                        logger.info(f"Prepared data: {normalized_message}")  
-                        session.add(new_element)
-                        session.commit()
-                    except Exception as err:
-                        session.rollback()
-                        logger.error(f"Error saving post: {err}")    
+                try:
+                    logger.info(f"Prepared data: {normalized_message}")  
+                    session.add(new_element)
+                    session.commit()
+                except Exception as err:
+                    session.rollback()
+                    logger.error(f"Error saving post: {err}")    
             else:
                 time.sleep(2)
-                
+
         except KeyboardInterrupt as err:
             logger.info("Gracefully exiting app...")
             sys.exit()

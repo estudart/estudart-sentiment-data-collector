@@ -28,13 +28,13 @@ def consume_queue(keyword, data_type):
                     new_element = YoutubeVideo(**message)
                 elif data_type == "comments":
                     new_element = YoutubeComment(**message)
-                    try:
-                        logger.info(f"Prepared data: {message}")  
-                        session.add(new_element)
-                        session.commit()
-                    except Exception as err:
-                        session.rollback()
-                        logger.error(f"Error saving post: {err}")
+                try:
+                    logger.info(f"Prepared data: {message}")  
+                    session.add(new_element)
+                    session.commit()
+                except Exception as err:
+                    session.rollback()
+                    logger.error(f"Error saving post: {err}")
             else:
                 time.sleep(2)
         except KeyboardInterrupt as err:
