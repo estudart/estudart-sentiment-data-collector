@@ -34,19 +34,6 @@ class YoutubeDataCollector(DataCollector):
     def fetch_data(self, query: str, limit: int = 5, by="channel") -> list:
 
         if by == "channel":
-            videos_data = self.youtube.search().list(
-                q=query,
-                part="id,snippet",
-                type="video",
-                regionCode="BR",
-                relevanceLanguage="pt",
-                maxResults=limit,
-                fields=(
-                    "items(id(videoId),snippet(publishedAt,channelId,channelTitle,title,description))"
-                )
-            ).execute()
-
-        else:
             channel_response = self.youtube.channels().list(
                 part='contentDetails',
                 id=query
@@ -60,6 +47,19 @@ class YoutubeDataCollector(DataCollector):
                 maxResults=limit,
                 fields=(
                     "items(snippet(publishedAt,channelId,channelTitle,title,description,resourceId(videoId)))"
+                )
+            ).execute()
+
+        else:
+            videos_data = self.youtube.search().list(
+                q=query,
+                part="id,snippet",
+                type="video",
+                regionCode="BR",
+                relevanceLanguage="pt",
+                maxResults=limit,
+                fields=(
+                    "items(id(videoId),snippet(publishedAt,channelId,channelTitle,title,description))"
                 )
             ).execute()
 
@@ -88,7 +88,7 @@ class YoutubeDataCollector(DataCollector):
             "video_id": video_id,
             "author": snippet["authorDisplayName"],
             "body": snippet["textDisplay"],
-            "ups": snippet["likeCount"],
+            "likes": snippet["likeCount"],
             "created_utc": snippet["publishedAt"]
         }
         self.logger.info(f"Processed new comment: {processed_comment}")
@@ -101,7 +101,7 @@ class YoutubeDataCollector(DataCollector):
                      video_data: dict, 
                      keyword: str, 
                      by: str = "channel") -> list:
-        is_post_new = False
+        is_video_new = False
 
         try:
             if by == "channel":
@@ -128,20 +128,20 @@ class YoutubeDataCollector(DataCollector):
 
                 # Engagement Metrics
                 "view_count": int(video_stats.get("viewCount", 0)),
-                "ups": int(video_stats.get("likeCount", 0)),
+                "likes": int(video_stats.get("likeCount", 0)),
                 "num_comments": int(video_stats.get("commentCount", 0)),
                 "num_favorite": int(video_stats.get("favoriteCount", 0)),
 
                 # URL
                 "url": f"https://www.youtube.com/watch?v={video_id}"
             }
-            if not self.queue_manager.is_set_member(f"{self.platform}-posts", video_id):
-                self.send_to_queue(f"{self.platform}-{keyword}-posts", 
+            if not self.queue_manager.is_set_member(f"{self.platform}-videos", video_id):
+                self.send_to_queue(f"{self.platform}-{keyword}-videos", 
                                     processed_video)
-                is_post_new = True
+                is_video_new = True
             else:
-                self.logger.debug(f"Post {video_id} already seen, skipping.")
-                #return is_post_new
+                self.logger.debug(f"video {video_id} already seen, skipping.")
+                return is_video_new
             
         except Exception as err:
             self.logger.error(
@@ -171,7 +171,7 @@ class YoutubeDataCollector(DataCollector):
                 f"Could not process comments for video with id {video_id}, "
                 f"reason: {err}")
 
-        return is_post_new
+        return is_video_new
     
 
     def send_to_queue(self, queue, data: json):
@@ -188,10 +188,10 @@ class YoutubeDataCollector(DataCollector):
                     f"Could not fetch data for {query}, "
                     f"reason: {err}")
                 break
-            number_of_posts = 0
+            number_of_videos = 0
             for video in videos["items"]:
                 if self.process_data(video, query):
-                    number_of_posts+=1
+                    number_of_videos+=1
 
             loop_finished_time = datetime.now(timezone.utc)
 
@@ -201,6 +201,6 @@ class YoutubeDataCollector(DataCollector):
 
             self.logger.info(
                 f"Loop for {query} took {round(time_difference, 2)} seconds "
-                f"and processed {number_of_posts} videos.")
+                f"and processed {number_of_videos} videos.")
 
             time.sleep(self.loop_delay_time)
