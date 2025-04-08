@@ -26,26 +26,19 @@ def consume_queue(keyword, data_type):
                     message, 
                     data_type)
                 if data_type == "posts":
-                    new_post = RedditPost(**normalized_message)
-                    try:
-                        logger.info(f"Prepared data: {normalized_message}")  
-                        session.add(new_post)
-                        session.commit()
-                    except Exception as err:
-                        session.rollback()
-                        logger.error(f"Error saving post: {err}")
-                if data_type == "comments":
-                    new_comment = RedditComment(**normalized_message)
-                    try:
-                        logger.info(f"Prepared data: {normalized_message}")  
-                        session.add(new_comment)
-                        session.commit()
-                    except Exception as err:
-                        session.rollback()
-                        logger.error(f"Error saving comment: {err}")
-                        
+                    new_element = RedditPost(**normalized_message)
+                elif data_type == "comments":
+                    new_element = RedditComment(**normalized_message)
+                try:
+                    logger.info(f"Prepared data: {normalized_message}")  
+                    session.add(new_element)
+                    session.commit()
+                except Exception as err:
+                    session.rollback()
+                    logger.error(f"Error saving post: {err}")    
             else:
                 time.sleep(2)
+
         except KeyboardInterrupt as err:
             logger.info("Gracefully exiting app...")
             sys.exit()
@@ -58,12 +51,6 @@ if __name__ == "__main__":
         for keyword in asset_keyword_list:
             posts_consumer_process = Process(target=consume_queue,
                                             args=(keyword, "posts",)
-                                            ).start()
-            comments_consumer_process = Process(target=consume_queue,
-                                            args=(keyword, "comments",)
-                                            ).start()
-            posts_consumer_process = Process(target=consume_queue,
-                                            args=(keyword, "comments",)
                                             ).start()
             comments_consumer_process = Process(target=consume_queue,
                                             args=(keyword, "comments",)
