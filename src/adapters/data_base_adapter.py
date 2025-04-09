@@ -13,7 +13,8 @@ def create_connection():
         f"postgresql://{secrets.get('POSTGRES_USERNAME')}:"
         f"{secrets.get('POSTGRES_PASSWORD')}@{secrets.get('POSTGRES_HOST')}:"
         f"{secrets.get('POSTGRES_PORT')}/{secrets.get('POSTGRES_DB_NAME')}"
-        f"?sslmode=require"
+        f"?sslmode=require",
+        pool_pre_ping=True
     )
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
