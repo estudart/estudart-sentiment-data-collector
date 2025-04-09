@@ -34,9 +34,18 @@ class YoutubeDataCollector(DataCollector):
     def fetch_data(self, query: str, limit: int = 5, by="channel") -> list:
 
         if by == "channel":
+            search_response = self.youtube.search().list(
+                q=query,
+                type='channel',
+                part='snippet',
+                maxResults=1
+            ).execute()
+
+            channel_id = search_response['items'][0]['snippet']['channelId']
+
             channel_response = self.youtube.channels().list(
                 part='contentDetails',
-                id=query
+                id=channel_id
             ).execute()
 
             uploads_playlist_id = channel_response['items'][0]['contentDetails']['relatedPlaylists']['uploads']
@@ -177,29 +186,40 @@ class YoutubeDataCollector(DataCollector):
         return self.queue_manager.send_to_queue(queue, data)
     
 
-    def run(self, query):
-        while True:
-            loop_start_time = datetime.now(timezone.utc)
-            try:
-                videos = self.fetch_data(query, limit=self.video_limit)
-            except Exception as err:
-                self.logger.info(
-                    f"Could not fetch data for {query}, "
-                    f"reason: {err}")
-                break
-            number_of_videos = 0
-            for video in videos["items"]:
-                if self.process_data(video, query):
-                    number_of_videos+=1
-
-            loop_finished_time = datetime.now(timezone.utc)
-
-            time_difference = (
-                (loop_finished_time - loop_start_time)
-                .total_seconds())
-
+    def run_loop(self, query):
+        loop_start_time = datetime.now(timezone.utc)
+        try:
+            videos = self.fetch_data(query, limit=self.video_limit)
+        except Exception as err:
             self.logger.info(
-                f"Loop for {query} took {round(time_difference, 2)} seconds "
-                f"and processed {number_of_videos} videos.")
+                f"Could not fetch data for {query}, "
+                f"reason: {err}")
+            raise
 
-            time.sleep(self.loop_delay_time)
+        number_of_videos = 0
+        for video in videos["items"]:
+            if self.process_data(video, query):
+                number_of_videos+=1
+
+        loop_finished_time = datetime.now(timezone.utc)
+
+        time_difference = (
+            (loop_finished_time - loop_start_time)
+            .total_seconds())
+
+        self.logger.info(
+            f"Loop for {query} took {round(time_difference, 2)} seconds "
+            f"and processed {number_of_videos} videos.")
+        
+
+    def run(self, querys):
+        while True:
+            for query in querys:
+                try:
+                    self.run_loop(query)
+                except Exception as err:
+                    self.logger.error(
+                        f"Could not run loop for {query}, reson: {err}"
+                    )
+            
+            time.sleep(self.loop_delay_time)         

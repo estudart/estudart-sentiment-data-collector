@@ -127,31 +127,42 @@ class RedditDataCollector(DataCollector):
         return self.queue_manager.send_to_queue(queue, data)
     
 
-    def run(self, keyword):
-        while True:
-            loop_start_time = datetime.now(timezone.utc)
-            try:
-                posts = self.fetch_data(keyword, limit=self.post_limit)
-            except Exception as err:
-                self.logger.info(
-                    f"Could not fetch data for {keyword}, "
-                    f"reason: {err}"
-                )
-                break
-            number_of_posts = 0
-            for post in posts:
-                if self.process_data(post, keyword):
-                    number_of_posts+=1
-            loop_finished_time = datetime.now(timezone.utc)
-
-            time_difference = (
-                (loop_finished_time - loop_start_time)
-                .total_seconds()
-            )
-
+    def run_loop(self, keyword):
+        loop_start_time = datetime.now(timezone.utc)
+        try:
+            posts = self.fetch_data(keyword, limit=self.post_limit)
+        except Exception as err:
             self.logger.info(
-                f"Loop for {keyword} took {round(time_difference, 2)} seconds "
-                f"and processed {number_of_posts} posts."
+                f"Could not fetch data for {keyword}, "
+                f"reason: {err}"
             )
+            raise
 
-            time.sleep(self.loop_delay_time)
+        number_of_posts = 0
+        for post in posts:
+            if self.process_data(post, keyword):
+                number_of_posts+=1
+        loop_finished_time = datetime.now(timezone.utc)
+
+        time_difference = (
+            (loop_finished_time - loop_start_time)
+            .total_seconds()
+        )
+
+        self.logger.info(
+            f"Loop for {keyword} took {round(time_difference, 2)} seconds "
+            f"and processed {number_of_posts} posts."
+        )
+
+
+    def run(self, keywords):
+        while True:
+            for keyword in keywords:
+                try:
+                    self.run_loop(keyword)
+                except Exception as err:
+                    self.logger.error(
+                        f"Could not run loop for {keyword}, reson: {err}"
+                    )
+            
+            time.sleep(self.loop_delay_time)   

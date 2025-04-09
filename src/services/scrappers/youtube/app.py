@@ -5,16 +5,15 @@ from src.collectors.youtube_collector import YoutubeDataCollector
 from src.utils.config import secrets
 
 
-def start_scrapper(query):
+def start_scrapper(keyword_list):
     reddit_instance = YoutubeDataCollector()
-    reddit_instance.run(query)
+    reddit_instance.run(keyword_list)
 
 if __name__ == "__main__":
     try:
         for asset, asset_query_list in secrets.get("YOUTUBE_QUERYS").items():
-            for query in asset_query_list:
                 Process(target=start_scrapper, 
-                        args=(query, )
+                        args=(asset_query_list, )
                         ).start()
     except KeyboardInterrupt as err:
         print("\nGracefully exiting app...")
