@@ -20,7 +20,7 @@ class YoutubeDataCollector(DataCollector):
         self.video_limit = self.secrets.get("YOUTUBE_VIDEO_LIMIT")
         self.comment_limit = self.secrets.get("YOUTUBE_COMMENT_LIMIT")
         self.api_key = self.secrets.get("YOUTUBE_API_KEY")
-        self.executor = ThreadPoolExecutor(max_workers=self.comment_limit)
+        self.executor = ThreadPoolExecutor(max_workers=5)
 
         self.youtube = None
 

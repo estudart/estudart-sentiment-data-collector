@@ -16,7 +16,7 @@ class RedditDataCollector(DataCollector):
         self.loop_delay_time = self.secrets.get("REDDIT_LOOP_DELAY_TIME")
         self.post_limit = self.secrets.get("REDDIT_POST_LIMIT")
         self.comment_limit = self.secrets.get("REDDIT_COMMENT_LIMIT")
-        self.executor = ThreadPoolExecutor(max_workers=self.comment_limit)
+        self.executor = ThreadPoolExecutor(max_workers=5)
 
         self.reddit = None
 
