@@ -6,11 +6,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from googleapiclient.discovery import build
 from youtube_transcript_api import YouTubeTranscriptApi
 
-from src.collectors.base_collector import DataCollector
+from src.collectors.news_collector import NewsDataCollector
 
 
 
-class YoutubeDataCollector(DataCollector):
+class YoutubeDataCollector(NewsDataCollector):
     def __init__(self):
         super().__init__()
 
