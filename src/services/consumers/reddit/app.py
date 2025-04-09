@@ -30,10 +30,6 @@ def consume_posts_queue(keyword):
                     logger.info(f"Prepared data: {normalized_message}")  
                     session.add(new_element)
                     session.commit()
-                    consumer_instance.add_to_set(
-                        "reddit-processed-posts", 
-                        normalized_message.get("id")
-                    )
                 except Exception as err:
                     session.rollback()
                     logger.error(f"Error saving post: {err}")    
@@ -62,16 +58,8 @@ def consume_comments_queue(keyword):
                 new_element = RedditComment(**normalized_message)
                 try:
                     logger.info(f"Prepared data: {normalized_message}")
-                    max_retry = 5
-                    retry = 0
-                    while retry < max_retry:
-                        if consumer_instance.is_set_member(
-                            "reddit-processed-posts", 
-                            normalized_message.get("post_id")):
-                            session.add(new_element)
-                            session.commit()
-                        time.sleep(10)
-                        retry+=1
+                    session.add(new_element)
+                    session.commit()
                 except Exception as err:
                     session.rollback()
                     logger.error(f"Error saving post: {err}")    
