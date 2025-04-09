@@ -6,24 +6,32 @@ services:
       context: .
       dockerfile: ./src/services/consumers/reddit/Dockerfile
     container_name: reddit-consumer
+    networks:
+      - estudart-sentiment-data-collector
 
   reddit-scrapper:
     build:
       context: .
       dockerfile: ./src/services/scrappers/reddit/Dockerfile
     container_name: reddit-scrapper
+    networks:
+      - estudart-sentiment-data-collector
 
   youtube-consumer:
     build:
       context: .
       dockerfile: ./src/services/consumers/youtube/Dockerfile
     container_name: youtube-consumer
+    networks:
+      - estudart-sentiment-data-collector
 
   youtube-scrapper:
     build:
       context: .
       dockerfile: ./src/services/scrappers/youtube/Dockerfile
     container_name: youtube-scrapper
+    networks:
+      - estudart-sentiment-data-collector
 
   redis:
     image: redis:latest
@@ -32,11 +40,12 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+    networks:
+      - estudart-sentiment-data-collector 
 
 volumes:
   redis-data:
 
 networks:
-  default:
-    name: estudart-sentiment-data-collector
+  estudart-sentiment-data-collector:
     driver: bridge

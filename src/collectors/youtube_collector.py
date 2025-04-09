@@ -74,9 +74,7 @@ class YoutubeDataCollector(DataCollector):
             return " ".join([transcript["text"] for transcript in transcripts])
 
         except Exception as err:
-            self.logger.error(
-                f"Could not retrieve transcript for {video_id}, reason: {err}")
-            return None
+            raise
     
 
     def process_comment(self, comment, keyword, video_id):
@@ -147,6 +145,7 @@ class YoutubeDataCollector(DataCollector):
             self.logger.error(
                 f"Could not process video with id {video_id}, "
                 f"reason: {err}")
+            return is_video_new
 
         self.logger.debug(f"Processed new video: {processed_video}")
 

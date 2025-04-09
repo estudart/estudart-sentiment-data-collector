@@ -8,11 +8,11 @@ class RedditComment(Base):
     __tablename__ = "reddit_comments"
 
     id = Column(String, primary_key=True)  # Reddit comment ID
-    post_id = Column(String, ForeignKey("reddit_posts.id"), nullable=False)
+    post_id = Column(String, ForeignKey("reddit_posts.id"), nullable=True)
     author = Column(String, nullable=True)
     body = Column(Text, nullable=True)
     score = Column(Integer, nullable=True)
-    created_at = Column(DateTime, nullable=False)
+    created_utc = Column(DateTime, nullable=False)
     parent_id = Column(String, nullable=True)
     depth = Column(Integer, nullable=True)
 

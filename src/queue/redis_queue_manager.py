@@ -46,6 +46,10 @@ class RedisQueueManager(QueueManager):
         else:
             self.queue_connection.sadd(set_name, id)
             return False
+        
+    
+    def add_to_set(self, set_name, id):
+        self.queue_connection.sadd(set_name, id)
 
     
     def consume_queue(self, queue_name: str):
