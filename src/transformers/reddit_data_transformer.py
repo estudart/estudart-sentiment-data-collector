@@ -41,7 +41,7 @@ class RedditDataTransformer(DataTransformer):
                 "author": data.get("author"),
                 "body": data.get("body"),
                 "score": data.get("score"),
-                "created_at": datetime.fromtimestamp(data.get("created_utc")),
+                "created_utc": datetime.fromtimestamp(data.get("created_utc")),
                 "parent_id": data.get("parent_id"),
                 "depth": data.get("depth"),
             }
