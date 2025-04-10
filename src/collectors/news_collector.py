@@ -8,7 +8,7 @@ from src.utils.extensions import logger
 
 
 
-class DataCollector(ABC):
+class NewsDataCollector(ABC):
     def __init__(self,
                  queue_manager: QueueManager = RedisQueueManager(),
                  secrets: dict = secrets):

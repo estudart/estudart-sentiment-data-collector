@@ -19,10 +19,11 @@ class RedditPost(Base):
     url = Column(String, default=None)
     created_utc = Column(DateTime, default=None)
     is_reply = Column(Boolean, default=False)
-    score = Column(Integer, default=0)
+    likes = Column(Integer, default=0)
     upvotes = Column(Integer, default=0)
     downvotes = Column(Integer, default=0)
     num_comments = Column(Integer, default=0)
+    topic = Column(String, nullable=False)
 
     # Campos específicos do Reddit
     selftext_html = Column(Text, default=None)

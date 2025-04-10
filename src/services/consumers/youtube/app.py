@@ -13,17 +13,18 @@ from src.utils.config import secrets
 
 
 
-def consume_queue(asset_keyword_list, data_type):
+def consume_queue(topic, topic_query_list, data_type):
     consumer_instance = RedisQueueManager()
     
     while True:
-        for keyword in asset_keyword_list:
+        for keyword in topic_query_list:
             queue_name = f"youtube-{keyword}-{data_type}"
             try:
                 message = consumer_instance.consume_queue(queue_name)
                 if message:
                     message["created_utc"] = datetime.strptime(message.get("created_utc"),
                                                             '%Y-%m-%dT%H:%M:%SZ')
+                    message["topic"] = topic
                     logger.debug(f"Received message on queue: {message}")
                     
                     if data_type == "videos":
@@ -47,10 +48,16 @@ def consume_queue(asset_keyword_list, data_type):
 
 
 if __name__ == "__main__":
-    for asset, asset_keyword_list in secrets.get("YOUTUBE_QUERYS").items():
+    for topic, topic_query_list in secrets.get("YOUTUBE_QUERYS").items():
         posts_consumer_process = Process(target=consume_queue,
-                                        args=(asset_keyword_list, "videos",)
+                                        args=(
+                                            topic,
+                                            topic_query_list, 
+                                            "videos",)
                                         ).start()
         comments_consumer_process = Process(target=consume_queue,
-                                        args=(asset_keyword_list, "comments",)
+                                        args=(
+                                            topic,
+                                            topic_query_list, 
+                                            "comments",)
                                         ).start()

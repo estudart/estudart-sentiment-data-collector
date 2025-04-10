@@ -4,12 +4,12 @@ from datetime import datetime, timezone
 
 import praw
 
-from src.collectors.base_collector import DataCollector
+from src.collectors.news_collector import NewsDataCollector
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 
-class RedditDataCollector(DataCollector):
+class RedditDataCollector(NewsDataCollector):
     def __init__(self):
         super().__init__()
 
