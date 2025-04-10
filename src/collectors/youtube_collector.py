@@ -31,46 +31,17 @@ class YoutubeDataCollector(NewsDataCollector):
         self.youtube = build("youtube", "v3", developerKey=self.api_key)
 
 
-    def fetch_data(self, query: str, limit: int = 5, by="channel") -> list:
-
-        if by == "channel":
-            search_response = self.youtube.search().list(
-                q=query,
-                type='channel',
-                part='snippet',
-                maxResults=1
-            ).execute()
-
-            channel_id = search_response['items'][0]['snippet']['channelId']
-
-            channel_response = self.youtube.channels().list(
-                part='contentDetails',
-                id=channel_id
-            ).execute()
-
-            uploads_playlist_id = channel_response['items'][0]['contentDetails']['relatedPlaylists']['uploads']
-
-            videos_data = self.youtube.playlistItems().list(
-                part="snippet",
-                playlistId=uploads_playlist_id,
-                maxResults=limit,
-                fields=(
-                    "items(snippet(publishedAt,channelId,channelTitle,title,description,resourceId(videoId)))"
-                )
-            ).execute()
-
-        else:
-            videos_data = self.youtube.search().list(
-                q=query,
-                part="id,snippet",
-                type="video",
-                regionCode="BR",
-                relevanceLanguage="pt",
-                maxResults=limit,
-                fields=(
-                    "items(id(videoId),snippet(publishedAt,channelId,channelTitle,title,description))"
-                )
-            ).execute()
+    def fetch_data(self, query: str, limit: int = 5) -> list:
+        videos_data = self.youtube.search().list(
+            channelId=query,
+            part="id,snippet",
+            type="video",
+            maxResults=limit,
+            order="date",
+            fields=(
+                "items(id(videoId),snippet(publishedAt,channelId,channelTitle,title,description))"
+            )
+        ).execute()
 
         return videos_data
     
@@ -106,15 +77,11 @@ class YoutubeDataCollector(NewsDataCollector):
 
     def process_data(self, 
                      video_data: dict, 
-                     keyword: str, 
-                     by: str = "channel") -> list:
+                     keyword: str) -> list:
         is_video_new = False
 
         try:
-            if by == "channel":
-                video_id = video_data["snippet"]["resourceId"]["videoId"]
-            else:
-                video_id = video_data["id"]["videoId"]
+            video_id = video_data["id"]["videoId"]
             video_stats = self.youtube.videos().list(
                     part="statistics",
                     id=video_id,
@@ -219,7 +186,7 @@ class YoutubeDataCollector(NewsDataCollector):
                     self.run_loop(query)
                 except Exception as err:
                     self.logger.error(
-                        f"Could not run loop for {query}, reson: {err}"
+                        f"Could not run loop for {query}, resson: {err}"
                     )
             
             time.sleep(self.loop_delay_time)         
