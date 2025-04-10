@@ -18,6 +18,7 @@ class YoutubeVideo(Base):
     created_utc = Column(DateTime, default=None)
     channel_id = Column(String, default=None)
     channel_title = Column(String, default=None)
+    topic = Column(String, nullable=False)
     
     view_count = Column(Integer, default=0)
     likes = Column(Integer, default=0)

@@ -8,13 +8,14 @@ class YoutubeComment(Base):
     __tablename__ = "youtube_comments"
 
     id = Column(String, primary_key=True)
-    video_id = Column(String, ForeignKey("youtube_videos.id"), nullable=True)
+    video_id = Column(String, nullable=True)
     author = Column(String, nullable=True)
+    topic = Column(String, nullable=False)
     body = Column(Text, nullable=True)
     likes = Column(Integer, nullable=False)
     created_utc = Column(DateTime, nullable=False)
 
-    video = relationship("YoutubeVideo", backref="comments")
+    # video = relationship("YoutubeVideo", backref="comments")
 
     def __repr__(self):
         return (
