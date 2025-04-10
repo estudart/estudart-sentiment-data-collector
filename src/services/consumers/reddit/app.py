@@ -13,11 +13,11 @@ from src.utils.config import secrets
 
 
 
-def consume_posts_queue(asset_keyword_list):
+def consume_posts_queue(topic, topic_query_list):
     consumer_instance = RedisQueueManager()
     transformer_instance = RedditDataTransformer()
     while True:
-        for keyword in asset_keyword_list:
+        for keyword in topic_query_list:
             queue_name = f"reddit-{keyword}-posts"
             try:
                 message = consumer_instance.consume_queue(queue_name)
@@ -25,7 +25,8 @@ def consume_posts_queue(asset_keyword_list):
                     logger.debug(f"Received message on queue: {message}")
                     normalized_message = transformer_instance.transform_data(
                         message, 
-                        "posts")
+                        "posts",
+                        topic)
                     new_element = RedditPost(**normalized_message)
                     try:
                         logger.info(f"Prepared data: {normalized_message}")  
@@ -44,11 +45,11 @@ def consume_posts_queue(asset_keyword_list):
                 logger.info(f"Could not consume queue, reason: {err}")
 
 
-def consume_comments_queue(asset_keyword_list):
+def consume_comments_queue(topic, topic_query_list):
     consumer_instance = RedisQueueManager()
     transformer_instance = RedditDataTransformer()
     while True:
-        for keyword in asset_keyword_list:
+        for keyword in topic_query_list:
             queue_name = f"reddit-{keyword}-comments"
             try:
                 message = consumer_instance.consume_queue(queue_name)
@@ -56,7 +57,8 @@ def consume_comments_queue(asset_keyword_list):
                     logger.debug(f"Received message on queue: {message}")
                     normalized_message = transformer_instance.transform_data(
                         message, 
-                        "comments")
+                        "comments",
+                        topic)
                     new_element = RedditComment(**normalized_message)
                     try:
                         logger.info(f"Prepared data: {normalized_message}")
@@ -76,10 +78,16 @@ def consume_comments_queue(asset_keyword_list):
 
 
 if __name__ == "__main__":
-    for asset, asset_keyword_list in secrets.get("REDDIT_KEYWORDS").items():
+    for topic, topic_query_list in secrets.get("REDDIT_KEYWORDS").items():
         posts_consumer_process = Process(target=consume_posts_queue,
-                                        args=(asset_keyword_list,)
+                                        args=(
+                                            topic,
+                                            topic_query_list,
+                                        )
                                         ).start()
         comments_consumer_process = Process(target=consume_comments_queue,
-                                        args=(asset_keyword_list,)
+                                        args=(
+                                            topic,
+                                            topic_query_list,
+                                        )
                                         ).start()
