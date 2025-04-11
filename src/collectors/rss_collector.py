@@ -13,6 +13,8 @@ class RssDataCollector(NewsDataCollector):
     def __init__(self):
         super().__init__()
 
+        self.platform = "rss"
+
         self.loop_delay_time = self.secrets.get("RSS_LOOP_DELAY_TIME")
         self.post_limit = self.secrets.get("RSS_POST_LIMIT")
 
@@ -22,30 +24,31 @@ class RssDataCollector(NewsDataCollector):
 
 
     def normalize_entry(self, entry):
-        # Try to safely get content/body
-        body = None
-        if hasattr(entry, "content") and entry.content:
-            body = entry.content[0].value
-        elif hasattr(entry, "summary"):
-            body = entry.summary
+        title = getattr(entry, "title")
+        url = getattr(entry, "link", None)
+        raw_date = getattr(entry, "published")
 
-        # Try to get a valid timestamp
-        created_utc = None
-        for date_field in ["published", "updated", "created"]:
-            if hasattr(entry, date_field):
-                try:
-                    created_utc = date_parser.parse(getattr(entry, date_field)).isoformat()
-                    break
-                except Exception as err:
-                    self.logger.error(f"Could not parse datetime: {err}")
-                    pass
+        try:
+            created_utc = date_parser.parse(raw_date).isoformat()
+        except Exception:
+            created_utc = date_parser.parse(raw_date[6:]).isoformat()
+
+        body = None
+        subtitle = None
+            
+        if hasattr(entry, "summary"):
+            if hasattr(entry, "content"):
+                body = entry.content[0].value
+                subtitle = getattr(entry, "summary")
+            else:
+                body = getattr(entry, "summary")
 
         return {
-            "title": getattr(entry, "title", ""),
-            "description": getattr(entry, "description", getattr(entry, "summary", "")),
+            "title": title,
+            "subtitle": subtitle,
             "body": body,
             "created_utc": created_utc,
-            "url": getattr(entry, "link", ""),
+            "url": url
         }
 
 
@@ -59,22 +62,28 @@ class RssDataCollector(NewsDataCollector):
         
         return data_list
     
-    def process_data(self, data):
+    def process_data(self, entry, keyword):
         is_new = False
-        # check if news were sent already
 
-        processed_data = self.normalize_entry(data)
+        if not self.queue_manager.is_set_member(
+            f"{self.platform}-processed-news", entry.title):
 
-        # # if not send it to queue
-        # self.queue_manager.send_to_queue(
-        #     "all-news", 
-        #     processed_data
-        # )
+            processed_data = self.normalize_entry(entry)
+            self.send_to_queue(
+                f"{self.platform}-{keyword}-news", 
+                processed_data)
 
-        self.logger.info(f"New article to process: {processed_data}")
+            is_new = True
+
+            self.logger.debug(f"Processed new article: {processed_data}")
+        else:
+            self.logger.debug(
+                f"article {entry.title} already seen, skipping."
+            )
+
         return is_new
 
-    def send_to_queue(self, queue, data: json):
+    def send_to_queue(self, queue, data):
         return self.queue_manager.send_to_queue(queue, data)
     
 
@@ -91,7 +100,7 @@ class RssDataCollector(NewsDataCollector):
 
         number_of_news = 0
         for new in news:
-            if self.process_data(new):
+            if self.process_data(new, keyword):
                 number_of_news+=1
         loop_finished_time = datetime.now(timezone.utc)
 
@@ -113,7 +122,7 @@ class RssDataCollector(NewsDataCollector):
                     self.run_loop(keyword)
                 except Exception as err:
                     self.logger.error(
-                        f"Could not run loop for {keyword}, reson: {err}"
+                        f"Could not run loop for {keyword}, reason: {err}"
                     )
             
             time.sleep(self.loop_delay_time)   
