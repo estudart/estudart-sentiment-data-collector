@@ -33,6 +33,22 @@ services:
     networks:
       - estudart-sentiment-data-collector
 
+  rss-consumer:
+    build:
+      context: .
+      dockerfile: ./src/services/consumers/rss/Dockerfile
+    container_name: rss-consumer
+    networks:
+      - estudart-sentiment-data-collector
+
+  rss-scrapper:
+    build:
+      context: .
+      dockerfile: ./src/services/scrappers/rss/Dockerfile
+    container_name: rss-scrapper
+    networks:
+      - estudart-sentiment-data-collector
+
   redis:
     image: redis:latest
     container_name: redis-container

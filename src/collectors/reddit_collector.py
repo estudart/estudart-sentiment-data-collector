@@ -13,6 +13,8 @@ class RedditDataCollector(NewsDataCollector):
     def __init__(self):
         super().__init__()
 
+        self.platform = "reddit"
+
         self.loop_delay_time = self.secrets.get("REDDIT_LOOP_DELAY_TIME")
         self.post_limit = self.secrets.get("REDDIT_POST_LIMIT")
         self.comment_limit = self.secrets.get("REDDIT_COMMENT_LIMIT")
@@ -49,8 +51,8 @@ class RedditDataCollector(NewsDataCollector):
             "parent_id": comment.parent_id,
             "depth": comment.depth  # Helps in structuring nested comments
         }
-        if not self.queue_manager.is_set_member("reddit-comments", comment.id):
-            self.send_to_queue(f"reddit-{keyword}-comments", 
+        if not self.queue_manager.is_set_member(f"{self.platform}-comments", comment.id):
+            self.send_to_queue(f"{self.platform}-{keyword}-comments", 
                                 processed_comments)
     
 
