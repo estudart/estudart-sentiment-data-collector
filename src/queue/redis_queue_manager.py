@@ -36,8 +36,11 @@ class RedisQueueManager(QueueManager):
 
     
     def send_to_queue(self, queue_name: str, data: dict):
-        self.queue_connection.lpush(queue_name, json.dumps(data))
-        self.logger.info(f"Message was sent to queue: {data}")
+        try:
+            self.queue_connection.lpush(queue_name, json.dumps(data))
+            self.logger.info(f"Message was sent to {queue_name}: {data}")
+        except:
+            raise
 
     
     def is_set_member(self, set_name, id):
