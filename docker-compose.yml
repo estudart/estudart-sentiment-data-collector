@@ -49,6 +49,22 @@ services:
     networks:
       - estudart-sentiment-data-collector
 
+  coinbase-consumer:
+    build:
+      context: .
+      dockerfile: ./src/services/consumers/coinbase/Dockerfile
+    container_name: coinbase-consumer
+    networks:
+      - estudart-sentiment-data-collector
+
+  coinbase-scrapper:
+    build:
+      context: .
+      dockerfile: ./src/services/scrappers/coinbase/Dockerfile
+    container_name: coinbase-scrapper
+    networks:
+      - estudart-sentiment-data-collector
+
   redis:
     image: redis:latest
     container_name: redis-container
